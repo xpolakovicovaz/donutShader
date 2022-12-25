@@ -15,54 +15,59 @@ namespace donut
             this.y = y;
         }
     }
-    
+    public class angle
+    {
+        public double angel1;
+        public double angel2;
+        public double angel3;
+        public angle()
+        {
+            angel1 = 0; 
+            angel2 = 0;
+            angel3 = 0;
+        }
+        public angle(double angel1, double angel2, double angel3)
+        {
+            this.angel1 = angel1;
+            this.angel2 = angel2;
+            this.angel3 = angel3;
+        }
+        public void add(angle otherAngle)
+        {
+            angel1 += otherAngle.angel1;
+            angel2 += otherAngle.angel2;
+            angel3+= otherAngle.angel3;               
+        }
+    }
     class Program
     {
-        private static double r1 = 10;
-        private static double r2 = 20;
-        private static char[] c = new char[22] { ',', ',', '-', '=', ':', '<', 'c', 'e', 'x', 'i', 'I', '3', 'H', 'V', 'U', 'O', 'K', '8', '0', 'N', 'M', ' ' };
-
-        private static double angel1=0;
-        private static double angel2=0;
-        private static double angel3=0;
-
-
-        public static int width = 100;
-
-        public static double step = 200;
+        //tube radius
+        private static double r1 = 8;
+        //ring radius
+        private static double r2 = 12;
+        //shades
+        private static char[] c = new char[22] { '.', ',', '-', '=', ':', '<', 'c', 'e', 'x', 'i', 'I', '3', 'H', 'V', 'U', 'O', 'K', '8', '0', 'N', 'M', ' ' };
+        //rotation of main axis in current step
+        private static angle rotation;
+        //width of screen
+        public static int width = 50;
+        //triangulation steps
+        public static double steps = 200;
         static void Main(string[] args)
         {
             Console.SetWindowSize(width, width);
             int i = 0;
             var r = new Random();
-            double subangle1 = 0;
-            double subangle2 = 0;
-            double subangle3 = 0;
+            angle subangle = new angle();
+            rotation = new angle();
             alfabetay[,] screen = new alfabetay[width, width];
    
             while (true)
             {
                 try
                 {
-                    if (i % 20 == 0)
-                        subangle1 = (r.Next() % 2) * 2 * Math.PI / step;
-                    if (i % 25 == 0)
-                        subangle2 = (r.Next() % 2) * 2 * Math.PI / step;
-                    if (i % 30 == 0)
-                    {
-                        if (subangle1 == 0 && subangle2 == 0)
-                            subangle3 = 2 * Math.PI / step;
-                        else
-                            subangle3 = (r.Next() % 2) * 2 * Math.PI / step;
-                    }
-                    if (subangle1 == 0 && subangle2 == 0)
-                    {
-                        subangle3 = 2 * Math.PI / step;
-                        subangle2 = 2 * Math.PI / step;
-                    }
-                    angel1 += subangle1;
-                    angel2 += subangle2;
-                    angel3 += subangle3;
+                    calculateSubangle(subangle, i, r);
+                    rotation.add(subangle);                   
 
                     drawRotatedDonut(screen);
                     i++;
@@ -71,10 +76,25 @@ namespace donut
                 catch (Exception ex)
                 {
                     var qw = 4;
-                    qw++;
                 }
             }
  
+        }
+        //calculate rotation increment in i-th step
+        private static void calculateSubangle(angle subangle, int i, Random r)
+        {
+            if (i % 20 == 0)
+                subangle.angel1 = (r.Next() % 2) * 2 * Math.PI / steps;
+            if (i % 25 == 0)
+                subangle.angel2 = (r.Next() % 2) * 2 * Math.PI / steps;
+            if (i % 30 == 0)
+                subangle.angel3 = (r.Next() % 2) * 2 * Math.PI / steps;
+
+            if (subangle.angel1 == 0 && subangle.angel2 == 0)
+            {
+                subangle.angel2 = 2 * Math.PI / steps;
+                subangle.angel3 = 2 * Math.PI / steps;
+            }
         }
 
         private static void clearscrean(alfabetay[,] screen)
@@ -88,14 +108,18 @@ namespace donut
         {
             clearscrean(screen);
             string s = "";
+            Tuple<double, double, double> point;
+            int x;
+            int z;
             for (double alfa  = -Math.PI; alfa <= Math.PI; alfa +=Math.PI/180)
             {
                 for (double beta = -Math.PI ; beta <= Math.PI ; beta += Math.PI / 180)
                 {
-                    var a = GetPoint(alfa, beta);
-                    if (screen[(int)Math.Round(a.Item1, 0, MidpointRounding.AwayFromZero)+ width/2, (int)Math.Round(a.Item3, 0, MidpointRounding.AwayFromZero)+ width/2] == null
-                        || (screen[(int)Math.Round(a.Item1, 0, MidpointRounding.AwayFromZero)+ width/2, (int)Math.Round(a.Item3, 0, MidpointRounding.AwayFromZero)+ width/2].y < a.Item2))
-                        screen[(int)Math.Round(a.Item1, 0, MidpointRounding.AwayFromZero)+ width/2, (int)Math.Round(a.Item3, 0, MidpointRounding.AwayFromZero)+ width/2] = new alfabetay(alfa, beta, a.Item2);
+                    point = GetPoint(alfa, beta);
+                    x = (int)Math.Round(point.Item1, 0, MidpointRounding.AwayFromZero) + width / 2;
+                    z = (int)Math.Round(point.Item3, 0, MidpointRounding.AwayFromZero) + width / 2;
+                    if (screen[x,z] == null || (screen[x,z].y < point.Item2))
+                        screen[x,z] = new alfabetay(alfa, beta, point.Item2);
                 }
             }
             for (int i = 0; i < width; i++)
@@ -132,44 +156,26 @@ namespace donut
 
         private static double GetZ(double alfa, double beta)
         {
-            return (-Math.Cos(angel1) * Math.Sin(angel2) * Math.Cos(angel3) + Math.Sin(angel1) * Math.Sin(angel3)) * (r2 * Math.Cos(beta) + r1 * Math.Cos(alfa) * Math.Cos(beta))
-                + (Math.Cos(angel1) * Math.Sin(angel2) * Math.Sin(angel3) + Math.Sin(angel1) * Math.Cos(angel3)) * (r2 * Math.Sin(beta) + r1 * Math.Cos(alfa) * Math.Sin(beta))
-                + (Math.Cos(angel1) * Math.Cos(angel2) * r1 * Math.Sin(alfa));
+            return (-Math.Cos(rotation.angel1) * Math.Sin(rotation.angel2) * Math.Cos(rotation.angel3) + Math.Sin(rotation.angel1) * Math.Sin(rotation.angel3)) * (r2 * Math.Cos(beta) + r1 * Math.Cos(alfa) * Math.Cos(beta))
+                + (Math.Cos(rotation.angel1) * Math.Sin(rotation.angel2) * Math.Sin(rotation.angel3) + Math.Sin(rotation.angel1) * Math.Cos(rotation.angel3)) * (r2 * Math.Sin(beta) + r1 * Math.Cos(alfa) * Math.Sin(beta))
+                + (Math.Cos(rotation.angel1) * Math.Cos(rotation.angel2) * r1 * Math.Sin(alfa));
         }
 
         private static double GetY(double alfa, double beta)
         {
-            return (Math.Sin(angel1) * Math.Sin(angel2) * Math.Cos(angel3) + Math.Cos(angel1) * Math.Sin(angel3)) * (r2 * Math.Cos(beta) + r1 * Math.Cos(alfa) * Math.Cos(beta))
-                + (-Math.Sin(angel1) * Math.Sin(angel2) * Math.Sin(angel3) + Math.Cos(angel1) * Math.Cos(angel3)) * (r2 * Math.Sin(beta) + r1 * Math.Cos(alfa) * Math.Sin(beta))
-                + (-Math.Sin(angel1) * Math.Cos(angel2) * r1 * Math.Sin(alfa));
+            return (Math.Sin(rotation.angel1) * Math.Sin(rotation.angel2) * Math.Cos(rotation.angel3) + Math.Cos(rotation.angel1) * Math.Sin(rotation.angel3)) * (r2 * Math.Cos(beta) + r1 * Math.Cos(alfa) * Math.Cos(beta))
+                + (-Math.Sin(rotation.angel1) * Math.Sin(rotation.angel2) * Math.Sin(rotation.angel3) + Math.Cos(rotation.angel1) * Math.Cos(rotation.angel3)) * (r2 * Math.Sin(beta) + r1 * Math.Cos(alfa) * Math.Sin(beta))
+                + (-Math.Sin(rotation.angel1) * Math.Cos(rotation.angel2) * r1 * Math.Sin(alfa));
         }
 
         private static double GetX(double alfa, double beta)
         {
-            return ( Math.Cos(angel2) * Math.Cos(angel3)) * (r2 * Math.Cos(beta) + r1 * Math.Cos(alfa) * Math.Cos(beta))
-                + (- Math.Cos(angel2) * Math.Sin(angel3) ) * (r2 * Math.Sin(beta) + r1 * Math.Cos(alfa) * Math.Sin(beta))
-                + (Math.Sin(angel2) * r1 * Math.Sin(alfa));
+            return ( Math.Cos(rotation.angel2) * Math.Cos(rotation.angel3)) * (r2 * Math.Cos(beta) + r1 * Math.Cos(alfa) * Math.Cos(beta))
+                + (- Math.Cos(rotation.angel2) * Math.Sin(rotation.angel3) ) * (r2 * Math.Sin(beta) + r1 * Math.Cos(alfa) * Math.Sin(beta))
+                + (Math.Sin(rotation.angel2) * r1 * Math.Sin(alfa));
         }
 
-        private static void drawDonut()
-        {
-            string s = "";
-            for (int z = -30; z <= 30; z++)
-            {
-                for (int x = -30; x <= 30; x++)
-                {
-                    var a = GetAngles(x, z);
-                    if (a == null)
-                        s += c[21];
-                    else
-                        s += GetShade(a.Item1, a.Item2);
-                }
-               // Console.WriteLine(s);s = "";
-                s += Environment.NewLine;
-            }
-            Console.WriteLine(@s);
-        }
-
+      
         private static char GetShade(double alpha, double beta)
         {
             double ss = GetRotatedSS(alpha, beta);
@@ -182,54 +188,12 @@ namespace donut
             }
         }
 
-        private static double GetSS(double alpha, double beta)
-        {
-            return -Math.Cos(alpha) * Math.Sin(beta);
-        }
         private static double GetRotatedSS(double alfa, double beta)
         {
-            return (             (Math.Sin(angel1) * Math.Sin(angel2) * Math.Cos(angel3) + Math.Cos(angel1) * Math.Sin(angel3)) * (Math.Cos(alfa) * Math.Cos(beta))
-                + (-Math.Sin(angel1) * Math.Sin(angel2) * Math.Sin(angel3) + Math.Cos(angel1) * Math.Cos(angel3)) * ( Math.Cos(alfa) * Math.Sin(beta))
-                + (-Math.Sin(angel1) * Math.Cos(angel2) * Math.Sin(alfa)));
+            return ((Math.Sin(rotation.angel1) * Math.Sin(rotation.angel2) * Math.Cos(rotation.angel3) + Math.Cos(rotation.angel1) * Math.Sin(rotation.angel3)) * (Math.Cos(alfa) * Math.Cos(beta))
+                + (-Math.Sin(rotation.angel1) * Math.Sin(rotation.angel2) * Math.Sin(rotation.angel3) + Math.Cos(rotation.angel1) * Math.Cos(rotation.angel3)) * ( Math.Cos(alfa) * Math.Sin(beta))
+                + (-Math.Sin(rotation.angel1) * Math.Cos(rotation.angel2) * Math.Sin(alfa)));
         }
-        private static Tuple<double, double> GetAngles(int x, int z)
-        {
-            double alpha1, alpha2, beta1, beta2, beta3, beta4;
-            double maxy = -100;
-            Tuple<double, double> result = null;
-
-            alpha1 = Math.Asin(z / r1);
-            if (double.IsNaN(alpha1))
-                return result;
-            alpha2 =Math.PI -alpha1;
-
-            beta1 = Math.Acos(x / (r2 + (r1 * Math.Cos(alpha1))));
-            beta2 = -beta1;
-            beta3 = Math.Acos(x / (r2 + (r1 * Math.Cos(alpha2))));
-            beta4 = -beta3;
-
-            if (!double.IsNaN(beta1)) if (isPoint(alpha1, beta1, x, z) && getY(alpha1, beta1) > maxy) { maxy = getY(alpha1, beta1); result = new Tuple<double, double>(alpha1, beta1); }
-            if (!double.IsNaN(beta1)) if (isPoint(alpha1, beta2, x, z) && getY(alpha1, beta2) > maxy) { maxy = getY(alpha1, beta2); result = new Tuple<double, double>(alpha1, beta2); }
-            if (!double.IsNaN(beta2)) if (isPoint(alpha1, beta3, x, z) && getY(alpha1, beta3) > maxy) { maxy = getY(alpha1, beta3); result = new Tuple<double, double>(alpha1, beta3); }
-            if (!double.IsNaN(beta2)) if(isPoint(alpha1, beta4, x, z) && getY(alpha1, beta4) > maxy) { maxy = getY(alpha1, beta4); result = new Tuple<double, double>(alpha1, beta4); }
-
-            if (!double.IsNaN(beta1)) if (isPoint(alpha2, beta1, x, z) && getY(alpha2, beta1) > maxy) { maxy = getY(alpha2, beta1); result = new Tuple<double, double>(alpha2, beta1); }
-            if (!double.IsNaN(beta1)) if(isPoint(alpha2, beta2, x, z) && getY(alpha2, beta2) > maxy) { maxy = getY(alpha2, beta2); result = new Tuple<double, double>(alpha2, beta2); }
-            if (!double.IsNaN(beta2)) if(isPoint(alpha2, beta3, x, z) && getY(alpha2, beta3) > maxy) { maxy = getY(alpha2, beta3); result = new Tuple<double, double>(alpha2, beta3); }
-            if (!double.IsNaN(beta2)) if (isPoint(alpha2, beta4, x, z) && getY(alpha2, beta4) > maxy) { maxy = getY(alpha2, beta4); result = new Tuple<double, double>(alpha2, beta4); }
-
-            return result;
-        }
-        private static bool isPoint(double alpha, double beta, int x, int z)
-        {
-            return Math.Round(r1 * Math.Sin(alpha), 0, MidpointRounding.AwayFromZero) == z
-                && Math.Round(r2 * Math.Cos(beta) + r1 * Math.Cos(alpha) * Math.Cos(beta), 0, MidpointRounding.AwayFromZero) == x;
-        }
-
-        private static double getY(double alpha, double beta)
-        {
-            return Math.Round(r2 * Math.Sin(beta) + r1 * Math.Cos(alpha) * Math.Sin(beta),2,MidpointRounding.AwayFromZero);
-        }
-
+     
     }
 }
